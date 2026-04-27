@@ -1,0 +1,14 @@
+build/
+.cache/
+compile_commands.json
+{{- if .Meson}}
+
+subprojects/*
+!subprojects/*.wrap
+{{- end}}
+{{- if .Nix}}
+
+.direnv/
+result
+result-*
+{{- end}}

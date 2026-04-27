@@ -1,0 +1,10 @@
+[wrap-git]
+url = {{.GitRepo}}
+revision = {{.Version}}
+depth = 1
+
+[provide]
+gtest = gtest_dep
+gtest_main = gtest_main_dep
+gmock = gmock_dep
+gmock_main = gmock_main_dep

@@ -1,0 +1,7 @@
+[wrap-git]
+url = {{.GitRepo}}
+revision = {{.Version}}
+depth = 1
+
+[provide]
+doctest = doctest_dep

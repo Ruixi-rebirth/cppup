@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v1.2.3)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test -mod=vendor ./...
+
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${{ github.event.inputs.version }}
+          LDFLAGS="-s -w -X github.com/Ruixi-rebirth/cppup/cmd.version=${VERSION}"
+          if [ "$GOOS" = "windows" ]; then
+            go build -mod=vendor -ldflags="${LDFLAGS}" -o cppup.exe .
+            zip "cppup-${GOOS}-${GOARCH}.zip" cppup.exe
+          else
+            go build -mod=vendor -ldflags="${LDFLAGS}" -o cppup .
+            tar czf "cppup-${GOOS}-${GOARCH}.tar.gz" cppup
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cppup-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: "cppup-${{ matrix.goos }}-${{ matrix.goarch }}.*"
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create ${{ github.event.inputs.version }} \
+            --title "cppup ${{ github.event.inputs.version }}" \
+            --generate-notes \
+            dist/*

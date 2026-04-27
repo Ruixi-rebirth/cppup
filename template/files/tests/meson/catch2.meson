@@ -1,0 +1,9 @@
+test_dep = dependency('catch2-with-main',
+  fallback : ['catch2', 'catch2_with_main_dep'],
+)
+
+test_exe = executable('tests', 'test_main.cpp',
+  dependencies : [test_dep{{if .LibName}}, {{.LibName}}_dep{{end}}],
+)
+
+test('basic tests', test_exe)

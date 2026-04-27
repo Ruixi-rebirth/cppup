@@ -1,0 +1,27 @@
+project(
+  '{{.ProjectName}}',
+  'cpp',
+  version : '{{.Version}}',
+  meson_version : '>= {{.MinVersion}}',
+  default_options : [
+    'warning_level=3',
+    'cpp_std=c++{{.CxxStd}}',
+  ]
+)
+
+{{.ProjectName}}_lib = {{.LibFn}}('{{.ProjectName}}',
+  'src/{{.ProjectName}}.cpp',
+  include_directories : include_directories('include'),
+  install : true,
+)
+
+install_subdir('include', install_dir : get_option('prefix'))
+
+{{.ProjectName}}_dep = declare_dependency(
+  include_directories : include_directories('include'),
+  link_with : {{.ProjectName}}_lib,
+)
+{{- if .WithTests}}
+
+subdir('tests')
+{{- end}}
