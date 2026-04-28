@@ -208,6 +208,10 @@ func runAddTests(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	if meta.BuildSystem == "meson" {
+		appendMesonSubprojectsToGitignore()
+	}
+
 	meta.TestFramework = framework
 	if err := writeMetaTo(metaFile, meta); err != nil {
 		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
@@ -325,6 +329,23 @@ func runAddNix(cmd *cobra.Command, args []string) {
 	appendNixToGitignore()
 
 	success("Added", "flake.nix, treefmt.nix, .envrc")
+}
+
+func appendMesonSubprojectsToGitignore() {
+	const entries = "\nsubprojects/*\n!subprojects/*.wrap\n"
+	content, err := os.ReadFile(".gitignore")
+	if err != nil {
+		return
+	}
+	if strings.Contains(string(content), "subprojects/*") {
+		return
+	}
+	f, err := os.OpenFile(".gitignore", os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	_, _ = f.WriteString(entries)
 }
 
 func appendNixToGitignore() {

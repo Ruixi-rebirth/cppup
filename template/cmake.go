@@ -30,6 +30,17 @@ func CMakeListsHeaderOnly(projectName, version, minVersion string, withTests boo
 	}{projectName, version, minVersion, withTests})
 }
 
+func CMakeConfigIn() (string, error) {
+	return RenderStatic("files/cmake/config.cmake.in")
+}
+
+func CMakePCIn(headerOnly bool) (string, error) {
+	if headerOnly {
+		return RenderStatic("files/cmake/header-only.pc.in")
+	}
+	return RenderStatic("files/cmake/lib.pc.in")
+}
+
 func Gitignore(nix, meson bool) (string, error) {
 	return Render("files/misc/gitignore", struct {
 		Nix   bool

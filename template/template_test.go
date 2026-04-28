@@ -77,8 +77,10 @@ func TestCMakeListsHeaderOnly(t *testing.T) {
 	assertContains(t, out,
 		"add_library(${PROJECT_NAME} INTERFACE)",
 		"INTERFACE",
-		"install(TARGETS ${PROJECT_NAME})",
+		"install(TARGETS ${PROJECT_NAME}",
 		"install(DIRECTORY include/",
+		"CMakePackageConfigHelpers",
+		"${PROJECT_NAME}Targets",
 	)
 }
 
