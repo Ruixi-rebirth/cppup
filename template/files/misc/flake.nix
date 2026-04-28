@@ -19,36 +19,30 @@
       treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./treefmt.nix);
     in
     {
-      formatter = eachSystem (pkgs: treefmtEval.${pkgs.system}.config.build.wrapper);
+      formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
 
       checks = eachSystem (pkgs: {
-        formatting = treefmtEval.${pkgs.system}.config.build.check self;
+        formatting = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
       });
 
-      packages = eachSystem (
-        pkgs:
-        {
-          default = pkgs.stdenv.mkDerivation {
-            pname = "{{.ProjectName}}";
-            version = "{{.Version}}";
-            src = ./.;
-            nativeBuildInputs = with pkgs; {{.NativeBuildInputs}};
-          };
-        }
-      );
+      packages = eachSystem (pkgs: {
+        default = pkgs.stdenv.mkDerivation {
+          pname = "{{.ProjectName}}";
+          version = "{{.Version}}";
+          src = ./.;
+          nativeBuildInputs = with pkgs; {{.NativeBuildInputs}};
+        };
+      });
 
-      devShells = eachSystem (
-        pkgs:
-        {
-          default = pkgs.mkShell {
-            inputsFrom = [ self.packages.${pkgs.system}.default ];
-            packages = with pkgs; [
-              clang-tools
-              gdb
-              treefmtEval.${pkgs.system}.config.build.wrapper
-            ];
-          };
-        }
-      );
+      devShells = eachSystem (pkgs: {
+        default = pkgs.mkShell {
+          inputsFrom = [ self.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+          packages = with pkgs; [
+            clang-tools
+            gdb
+            treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
+          ];
+        };
+      });
     };
 }

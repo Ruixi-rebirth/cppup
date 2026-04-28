@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #[[ Dependencies: use find_package() for system libs or FetchContent for others.
 Example with FetchContent:
   include(FetchContent)
-  FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt.git GIT_TAG 11.0.2 GIT_SHALLOW TRUE)
+  FetchContent_Declare(fmt URL https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.tar.gz DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   FetchContent_MakeAvailable(fmt) ]]
 
 add_executable(${PROJECT_NAME} src/main.cpp)

@@ -469,8 +469,14 @@ func printCreated(verb, dir string, cfg ProjectConfig) {
 	case "lib-static", "lib-shared":
 		fmt.Printf("  %s/src/%s.cpp\n", dir, cfg.Name)
 		fmt.Printf("  %s/include/%s/%s.hpp\n", dir, cfg.Name, cfg.Name)
+		if cfg.Build == "cmake" {
+			fmt.Printf("  %s/cmake/%sConfig.cmake.in\n", dir, cfg.Name)
+		}
 	case "lib-header":
 		fmt.Printf("  %s/include/%s/%s.hpp\n", dir, cfg.Name, cfg.Name)
+		if cfg.Build == "cmake" {
+			fmt.Printf("  %s/cmake/%sConfig.cmake.in\n", dir, cfg.Name)
+		}
 	}
 	if cfg.Tests != "" {
 		fmt.Printf("  %s/tests/test_main.cpp\n", dir)
@@ -490,6 +496,7 @@ func printCreated(verb, dir string, cfg ProjectConfig) {
 		fmt.Printf("  %s$%s cd %s%s%s\n", colorDim, colorReset, colorBold, dir, colorReset)
 	}
 	if cfg.Nix {
+		fmt.Printf("  %s$%s direnv allow%s  %s# requires direnv + nix-direnv%s\n", colorDim, colorReset, colorDim, colorDim, colorReset)
 		fmt.Printf("  %s$%s nix develop\n", colorDim, colorReset)
 	}
 	fmt.Printf("  %s$%s cppup build\n", colorDim, colorReset)
@@ -673,7 +680,26 @@ func scaffoldBuildSystem(root string, cfg ProjectConfig, withTests bool) error {
 		if err != nil {
 			return err
 		}
-		return writeFile(filepath.Join(root, "CMakeLists.txt"), content)
+		if err := writeFile(filepath.Join(root, "CMakeLists.txt"), content); err != nil {
+			return err
+		}
+		if cfg.Type == "lib-static" || cfg.Type == "lib-shared" || cfg.Type == "lib-header" {
+			configIn, err := template.CMakeConfigIn()
+			if err != nil {
+				return err
+			}
+			if err := writeFile(filepath.Join(root, "cmake", cfg.Name+"Config.cmake.in"), configIn); err != nil {
+				return err
+			}
+			pcIn, err := template.CMakePCIn(cfg.Type == "lib-header")
+			if err != nil {
+				return err
+			}
+			if err := writeFile(filepath.Join(root, "cmake", cfg.Name+".pc.in"), pcIn); err != nil {
+				return err
+			}
+		}
+		return nil
 	case "meson":
 		content := ""
 		if cfg.Type == "lib-header" {

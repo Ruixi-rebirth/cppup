@@ -53,7 +53,7 @@ func findCppFiles(root string, excludes ...string) []string {
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if name == dirBuild || strings.HasPrefix(name, ".") {
+			if name == dirBuild || name == dirSubproj || strings.HasPrefix(name, ".") {
 				return filepath.SkipDir
 			}
 			for _, ex := range excludes {

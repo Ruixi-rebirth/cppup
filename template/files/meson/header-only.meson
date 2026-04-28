@@ -14,6 +14,13 @@ install_subdir('include', install_dir : get_option('prefix'))
 {{.ProjectName}}_dep = declare_dependency(
   include_directories : include_directories('include'),
 )
+
+pkg = import('pkgconfig')
+pkg.generate(
+  name : '{{.ProjectName}}',
+  description : '{{.ProjectName}} header-only library',
+  version : meson.project_version(),
+)
 {{- if .WithTests}}
 
 subdir('tests')
