@@ -666,11 +666,12 @@ func scaffoldBuildSystem(root string, cfg ProjectConfig, withTests bool) error {
 	switch cfg.Build {
 	case "cmake":
 		content := ""
-		if cfg.Type == "lib-header" {
+		switch cfg.Type {
+		case "lib-header":
 			content, err = template.CMakeListsHeaderOnly(cfg.Name, cfg.Version, cfg.BuildVersion, withTests)
-		} else if cfg.Type == "exe" {
+		case "exe":
 			content, err = template.CMakeListsExe(cfg.Name, cfg.Version, cfg.Std, cfg.BuildVersion, withTests)
-		} else {
+		default:
 			libType := "STATIC"
 			if cfg.Type == "lib-shared" {
 				libType = "SHARED"
@@ -702,11 +703,12 @@ func scaffoldBuildSystem(root string, cfg ProjectConfig, withTests bool) error {
 		return nil
 	case "meson":
 		content := ""
-		if cfg.Type == "lib-header" {
+		switch cfg.Type {
+		case "lib-header":
 			content, err = template.MesonBuildHeaderOnly(cfg.Name, cfg.Version, cfg.Std, cfg.BuildVersion, withTests)
-		} else if cfg.Type == "exe" {
+		case "exe":
 			content, err = template.MesonBuildExe(cfg.Name, cfg.Version, cfg.Std, cfg.BuildVersion, withTests)
-		} else {
+		default:
 			libType := "static"
 			if cfg.Type == "lib-shared" {
 				libType = "shared"
@@ -728,13 +730,16 @@ func scaffoldSources(root string, cfg ProjectConfig) error {
 		if err != nil {
 			return err
 		}
+		if err := os.MkdirAll(filepath.Join(root, dirInclude, cfg.Name), 0o755); err != nil {
+			return err
+		}
 		return writeFile(filepath.Join(root, dirSrc, "main.cpp"), content)
 	case "lib-static", "lib-shared":
 		hpp, err := template.LibHpp(cfg.Name)
 		if err != nil {
 			return err
 		}
-		if err := writeFile(filepath.Join(root, dirInclude, cfg.Name, cfg.Name+".hpp"), hpp); err != nil {
+		if err = writeFile(filepath.Join(root, dirInclude, cfg.Name, cfg.Name+".hpp"), hpp); err != nil {
 			return err
 		}
 		cpp, err := template.LibCpp(cfg.Name)
@@ -775,7 +780,7 @@ func scaffoldTests(root string, cfg ProjectConfig, withTests bool) error {
 		if err != nil {
 			return err
 		}
-		if err := writeFile(filepath.Join(root, dirTests, "meson.build"), content); err != nil {
+		if err = writeFile(filepath.Join(root, dirTests, "meson.build"), content); err != nil {
 			return err
 		}
 		wrap, err := template.MesonWrap(cfg.Tests, cfg.TestsVersion)
@@ -821,14 +826,14 @@ func scaffoldExtras(root string, cfg ProjectConfig) error {
 		if err != nil {
 			return err
 		}
-		if err := writeFile(filepath.Join(root, "flake.nix"), flake); err != nil {
+		if err = writeFile(filepath.Join(root, "flake.nix"), flake); err != nil {
 			return err
 		}
 		treefmt, err := template.TreefmtNix()
 		if err != nil {
 			return err
 		}
-		if err := writeFile(filepath.Join(root, "treefmt.nix"), treefmt); err != nil {
+		if err = writeFile(filepath.Join(root, "treefmt.nix"), treefmt); err != nil {
 			return err
 		}
 		envrc, err := template.Envrc()

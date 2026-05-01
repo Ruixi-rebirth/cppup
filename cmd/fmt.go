@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -35,14 +37,41 @@ var fmtCmd = &cobra.Command{
 				fmt.Printf("%snothing to format%s\n", colorDim, colorReset)
 				return
 			}
-			step("Formatting", fmt.Sprintf("clang-format · %d files", len(files)))
-			if err := execCommand("clang-format", append([]string{"-i"}, files...)...); err != nil {
+			changed, err := clangFormatFiles(files)
+			if err != nil {
 				fail("Format failed")
 				os.Exit(1)
 			}
+			if changed == 0 {
+				fmt.Printf("%salready formatted%s\n", colorDim, colorReset)
+				return
+			}
+			success("Formatted", fmt.Sprintf("clang-format · %d/%d files changed", changed, len(files)))
+			return
 		}
 		success("Formatted", "")
 	},
+}
+
+func clangFormatFiles(files []string) (int, error) {
+	changed := 0
+	for _, f := range files {
+		original, err := os.ReadFile(f)
+		if err != nil {
+			return 0, err
+		}
+		out, err := exec.Command("clang-format", f).Output()
+		if err != nil {
+			return 0, err
+		}
+		if !bytes.Equal(original, out) {
+			if err := os.WriteFile(f, out, 0o644); err != nil {
+				return 0, err
+			}
+			changed++
+		}
+	}
+	return changed, nil
 }
 
 func findCppFiles(root string, excludes ...string) []string {
@@ -53,7 +82,7 @@ func findCppFiles(root string, excludes ...string) []string {
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if name == dirBuild || name == dirSubproj || strings.HasPrefix(name, ".") {
+			if name == dirBuild || name == dirSubproj || (name != "." && strings.HasPrefix(name, ".")) {
 				return filepath.SkipDir
 			}
 			for _, ex := range excludes {

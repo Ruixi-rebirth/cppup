@@ -9,16 +9,18 @@ project(
   ]
 )
 
+inc = include_directories('include')
+
 {{.ProjectName}}_lib = {{.LibFn}}('{{.ProjectName}}',
   'src/{{.ProjectName}}.cpp',
-  include_directories : include_directories('include'),
+  include_directories : inc,
   install : true,
 )
 
 install_subdir('include', install_dir : get_option('prefix'))
 
 {{.ProjectName}}_dep = declare_dependency(
-  include_directories : include_directories('include'),
+  include_directories : inc,
   link_with : {{.ProjectName}}_lib,
 )
 

@@ -7,6 +7,25 @@ import (
 
 const metaFile = ".cppup"
 
+type Dep struct {
+	Name string `json:"name"`
+	Git  string `json:"git,omitempty"`
+	Tag  string `json:"tag,omitempty"`
+	URL  string `json:"url,omitempty"`
+	Hash string `json:"hash,omitempty"`
+}
+
+func (d Dep) Info() string {
+	switch {
+	case d.Git != "":
+		return "[Git: " + d.Tag + "]"
+	case d.URL != "":
+		return "[URL]"
+	default:
+		return "[WrapDB]"
+	}
+}
+
 type ProjectMeta struct {
 	Name          string `json:"name"`
 	Type          string `json:"type"`
@@ -14,6 +33,7 @@ type ProjectMeta struct {
 	Version       string `json:"version"`
 	Std           string `json:"std"`
 	TestFramework string `json:"test_framework,omitempty"`
+	Deps          []Dep  `json:"deps,omitempty"`
 }
 
 func readMeta() (ProjectMeta, error) {

@@ -9,13 +9,16 @@ project(
   ]
 )
 
-# Dependencies: use dependency() for pkg-config/cmake packages, or subproject() for wraps.
+# Dependencies: dependency() prefers system libs (pkg-config/cmake) for faster builds.
+# Use 'fallback' to automatically build from subprojects/ if the system lib is missing.
 # Example: fmt_dep = dependency('fmt', fallback: ['fmt', 'fmt_dep'])
+
+inc = include_directories('include')
 
 executable('{{.ProjectName}}',
   'src/main.cpp',
   # dependencies : [fmt_dep],
-  include_directories : include_directories('include'),
+  include_directories : inc,
   install : true,
 )
 {{- if .WithTests}}

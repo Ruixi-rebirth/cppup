@@ -78,13 +78,30 @@ Build and run tests using `ctest` or `meson test`.
 
 ### `cppup add`
 
-Add components to an existing project. Smartly reads version and metadata from `.cppup`.
+Add components or dependencies to an existing project. Smartly reads metadata from `.cppup`.
 
 ```bash
 cppup add tests --framework catch2
 cppup add clang-format
 cppup add clang-tidy
 cppup add nix
+
+# Dependency Management
+cppup add dep fmt              # Add from WrapDB (Meson only)
+cppup add dep --git https://github.com/fmtlib/fmt.git --tag v11.0.2
+cppup add dep --url https://example.com/lib.tar.gz --name mylib
+```
+
+### `cppup deps`
+
+List all configured dependencies in the project.
+
+### `cppup remove <name>`
+
+Remove a dependency or component.
+
+```bash
+cppup remove dep fmt
 ```
 
 ### `cppup fmt`
