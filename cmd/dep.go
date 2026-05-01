@@ -60,59 +60,59 @@ func nameFromGitURL(url string) string {
 	return strings.TrimSuffix(base, ".git")
 }
 
+func requireMeta() ProjectMeta {
+	if err := findProjectRoot(); err != nil {
+		fatal("%v", err)
+	}
+	meta, err := readMeta()
+	if err != nil {
+		fatal("not a cppup project (missing %s)", metaFile)
+	}
+	return meta
+}
+
+func checkDuplicate(deps []Dep, name string) {
+	for _, d := range deps {
+		if d.Name == name {
+			fatal("dependency %q already exists", name)
+		}
+	}
+}
+
 func runAddDep(cmd *cobra.Command, args []string) {
 	wrapDB := len(args) == 1 && depGit == "" && depURL == ""
 
 	if !wrapDB {
 		if depGit == "" && depURL == "" {
-			fmt.Fprintf(os.Stderr, "%s✗%s specify --git, --url, or a package name (meson WrapDB)\n", colorBrightRed, colorReset)
-			os.Exit(1)
+			fatal("specify --git, --url, or a package name (meson WrapDB)")
 		}
 		if depGit != "" && depURL != "" {
-			fmt.Fprintf(os.Stderr, "%s✗%s use --git or --url, not both\n", colorBrightRed, colorReset)
-			os.Exit(1)
+			fatal("use --git or --url, not both")
 		}
 		if depGit != "" && depTag == "" {
-			fmt.Fprintf(os.Stderr, "%s✗%s --tag is required with --git\n", colorBrightRed, colorReset)
-			os.Exit(1)
+			fatal("--tag is required with --git")
 		}
 		if depURL != "" && depName == "" {
-			fmt.Fprintf(os.Stderr, "%s✗%s --name is required with --url\n", colorBrightRed, colorReset)
-			os.Exit(1)
+			fatal("--name is required with --url")
 		}
 	}
 
-	if err := findProjectRoot(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
-	}
-
-	meta, err := readMeta()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s not a cppup project (missing %s)\n", colorBrightRed, colorReset, metaFile)
-		os.Exit(1)
-	}
+	meta := requireMeta()
 
 	if wrapDB {
 		if meta.BuildSystem != "meson" {
-			fmt.Fprintf(os.Stderr, "%s✗%s WrapDB is only available for meson projects, use --git or --url\n", colorBrightRed, colorReset)
-			os.Exit(1)
+			fatal("WrapDB is only available for meson projects, use --git or --url")
 		}
 		name := args[0]
-		for _, d := range meta.Deps {
-			if d.Name == name {
-				fmt.Fprintf(os.Stderr, "%s✗%s dependency %q already exists\n", colorBrightRed, colorReset, name)
-				os.Exit(1)
-			}
-		}
+		checkDuplicate(meta.Deps, name)
+
 		if err := execCommand("meson", "wrap", "install", name); err != nil {
 			fail("Failed to install wrap")
 			os.Exit(1)
 		}
 		meta.Deps = append(meta.Deps, Dep{Name: name})
 		if err := writeMetaTo(metaFile, meta); err != nil {
-			fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-			os.Exit(1)
+			fatal("%v", err)
 		}
 		appendMesonSubprojectsToGitignore()
 		success("Added", name+" (WrapDB)")
@@ -128,12 +128,7 @@ func runAddDep(cmd *cobra.Command, args []string) {
 		name = depName
 	}
 
-	for _, d := range meta.Deps {
-		if d.Name == name {
-			fmt.Fprintf(os.Stderr, "%s✗%s dependency %q already exists\n", colorBrightRed, colorReset, name)
-			os.Exit(1)
-		}
-	}
+	checkDuplicate(meta.Deps, name)
 
 	dep := Dep{Name: name, Git: depGit, Tag: depTag, URL: depURL}
 
@@ -141,8 +136,7 @@ func runAddDep(cmd *cobra.Command, args []string) {
 		step("Fetching", depURL)
 		hash, err := fetchSHA256(depURL)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s✗%s failed to fetch: %v\n", colorBrightRed, colorReset, err)
-			os.Exit(1)
+			fatal("failed to fetch: %v", err)
 		}
 		dep.Hash = hash
 	}
@@ -150,13 +144,10 @@ func runAddDep(cmd *cobra.Command, args []string) {
 	meta.Deps = append(meta.Deps, dep)
 
 	if err := syncDeps(meta); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
+		fatal("%v", err)
 	}
-
 	if err := writeMetaTo(metaFile, meta); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
+		fatal("%v", err)
 	}
 
 	label := name
@@ -175,16 +166,7 @@ func runAddDep(cmd *cobra.Command, args []string) {
 }
 
 func runDeps(cmd *cobra.Command, args []string) {
-	if err := findProjectRoot(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
-	}
-
-	meta, err := readMeta()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s not a cppup project (missing %s)\n", colorBrightRed, colorReset, metaFile)
-		os.Exit(1)
-	}
+	meta := requireMeta()
 
 	if len(meta.Deps) == 0 {
 		fmt.Printf("%sno dependencies%s\n", colorDim, colorReset)
@@ -199,16 +181,7 @@ func runDeps(cmd *cobra.Command, args []string) {
 }
 
 func runRemoveDep(cmd *cobra.Command, args []string) {
-	if err := findProjectRoot(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
-	}
-
-	meta, err := readMeta()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s not a cppup project (missing %s)\n", colorBrightRed, colorReset, metaFile)
-		os.Exit(1)
-	}
+	meta := requireMeta()
 
 	name := args[0]
 	found := false
@@ -222,8 +195,7 @@ func runRemoveDep(cmd *cobra.Command, args []string) {
 	}
 
 	if !found {
-		fmt.Fprintf(os.Stderr, "%s✗%s dependency %q not found\n", colorBrightRed, colorReset, name)
-		os.Exit(1)
+		fatal("dependency %q not found", name)
 	}
 
 	if meta.BuildSystem == "meson" {
@@ -233,13 +205,10 @@ func runRemoveDep(cmd *cobra.Command, args []string) {
 	meta.Deps = newDeps
 
 	if err := syncDeps(meta); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
+		fatal("%v", err)
 	}
-
 	if err := writeMetaTo(metaFile, meta); err != nil {
-		fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-		os.Exit(1)
+		fatal("%v", err)
 	}
 
 	success("Removed", name)
@@ -337,6 +306,9 @@ func syncMesonDeps(deps []Dep) error {
 		return err
 	}
 	for _, d := range deps {
+		if d.Git == "" && d.URL == "" {
+			continue // WrapDB deps are managed by meson wrap install
+		}
 		path := filepath.Join(dirSubproj, d.Name+".wrap")
 		if err := os.WriteFile(path, []byte(generateMesonWrap(d)), 0o644); err != nil {
 			return err

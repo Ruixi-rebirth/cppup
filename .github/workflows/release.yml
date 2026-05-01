@@ -68,6 +68,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           path: dist/
@@ -77,7 +80,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create ${{ github.event.inputs.version }} \
-            --title "cppup ${{ github.event.inputs.version }}" \
-            --generate-notes \
-            dist/*
+          VERSION=${{ github.event.inputs.version }}
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            gh release create $VERSION \
+              --title "cppup $VERSION" \
+              --notes-start-tag "$PREVIOUS_TAG" \
+              --generate-notes \
+              dist/*
+          else
+            gh release create $VERSION \
+              --title "cppup $VERSION" \
+              --generate-notes \
+              dist/*
+          fi

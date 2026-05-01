@@ -46,3 +46,8 @@ func fail(label string) {
 		label,
 	)
 }
+
+func fatal(format string, a ...any) {
+	fmt.Fprintf(os.Stderr, "%s✗%s %s\n", colorBrightRed, colorReset, fmt.Sprintf(format, a...))
+	os.Exit(1)
+}
