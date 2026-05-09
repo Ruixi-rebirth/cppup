@@ -273,25 +273,21 @@ func runAddNix(cmd *cobra.Command, args []string) {
 	version := meta.Version
 	if version == "" {
 		version = defaultVersion
-	}
-
-	if isTTY() {
-		rl, err := readline.NewEx(&readline.Config{
-			AutoComplete: &completer{},
-		})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-			os.Exit(1)
-		}
-		defer rl.Close()
-		v, err := prompt(rl, "Project version", version)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
-			os.Exit(1)
-		}
-		version = v
-		// Update meta with the provided version if it was missing or changed
-		if meta.Version != version {
+		if isTTY() {
+			rl, err := readline.NewEx(&readline.Config{
+				AutoComplete: &completer{},
+			})
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
+				os.Exit(1)
+			}
+			defer rl.Close()
+			v, err := prompt(rl, "Project version", version)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s✗%s %v\n", colorBrightRed, colorReset, err)
+				os.Exit(1)
+			}
+			version = v
 			meta.Version = version
 			_ = writeMetaTo(metaFile, meta)
 		}
